@@ -33,8 +33,13 @@ public class MonthlyReport implements CalculateReport {
                 .distinct()
                 .toList();
 
+        
         for (var project : projectNames) {
-           
+            log.info("project name: {}", project);
+            var p = contractReport.stream()
+                    .filter(report -> project.equalsIgnoreCase(report.getFunctionId().replaceAll("\\s", "")))
+                    .mapToDouble(DailyReport::getHour)
+                    .sum();
         }
 
         log.info("project count: {}", projectNames);
