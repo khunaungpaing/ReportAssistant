@@ -13,7 +13,7 @@ public class DailyReport {
     private String ProjectId;
     private String projectName;
     private String staffId;
-    private String name;
+    private String staffName;
     private String functionId;
     private String activity;
     private String category;

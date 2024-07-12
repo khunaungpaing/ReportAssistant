@@ -1,6 +1,7 @@
 package com.khun.reportassistant.controller;
 
 import com.khun.reportassistant.models.DailyReport;
+import com.khun.reportassistant.services.CalculateReport;
 import com.khun.reportassistant.services.FilesIOService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,26 +24,32 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class FileController {
     private final FilesIOService filesIOService;
+    private final CalculateReport calculateReport;
 
     @PostMapping("/upload")
-    public ResponseEntity<InputStreamResource> uploadFile(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String,Object>> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
             List<DailyReport> dataList = filesIOService.readExcelFile(file);
-            log.info("Data: {}", dataList);
-            ByteArrayInputStream in = filesIOService.writeExcelFile(dataList);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Content-Disposition", "attachment; filename=report.xlsx");
-            return ResponseEntity
-                    .ok()
-                    .headers(headers)
-                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                    .body(new InputStreamResource(in));
+            calculateReport.calculateCustomerSupport(dataList, List.of(
+                    "Aung Thein Kyaw", "Thant Htet Ko", "Thant Tun Kyaw", "Shin Khant", "Kyaw Zaw Lin"
+                ));
+
+            return ResponseEntity.ok(Map.of("data size", dataList.size()));
+            // HttpHeaders headers = new HttpHeaders();
+            // headers.add("Content-Disposition", "attachment; filename=report.xlsx");
+            // return ResponseEntity
+            //         .ok()
+            //         .headers(headers)
+            //         .contentType(MediaType.APPLICATION_OCTET_STREAM)
+            //         .body(new InputStreamResource(in));
         } catch (Exception e) {
             log.error("Failed to read file: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
+
+
 
 }
 

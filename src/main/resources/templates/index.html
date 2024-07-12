@@ -109,13 +109,7 @@
 
     </div>
 </div>
-<div>
-    <input type="file" id="fileInput" />
-    <button onclick="uploadFile()">Upload</button>
-</div>
-<div>
-    <button onclick="downloadFile()">Download Report</button>
-</div>
+
 <script>
     const dropArea = document.querySelector(".drop_box"),
         button = dropArea.querySelector("button"),
@@ -143,15 +137,17 @@
             });
 
             if (response.ok) {
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = url;
-                a.download = 'report.xlsx';
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(url);
+                console.log('File uploaded successfully');
+                alert(response);
+                // const blob = await response.blob();
+                // const url = window.URL.createObjectURL(blob);
+                // const a = document.createElement('a');
+                // a.style.display = 'none';
+                // a.href = url;
+                // a.download = 'report.xlsx';
+                // document.body.appendChild(a);
+                // a.click();
+                // window.URL.revokeObjectURL(url);
             } else {
                 console.error('File upload failed:', response.statusText);
             }

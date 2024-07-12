@@ -14,6 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -29,22 +30,26 @@ public class SimpleFilesIO implements FilesIOService {
 
         try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
             Sheet sheet = workbook.getSheetAt(0);
+            log.info("sheet name: {}", sheet.getSheetName());
             for (Row row : sheet) {
                 // Skip the header row (assumed to be the first row)
                 if (row.getRowNum() == 0) {
                     continue;
                 }
-
+                
                 DailyReport dailyReport = new DailyReport();
 
+                
                 dailyReport.setDate(row.getCell(0).getLocalDateTimeCellValue().toLocalDate());
-                dailyReport.setProjectId(row.getCell(1).getStringCellValue());
+                if(row.getCell(1) != null) {
+                    dailyReport.setProjectId(row.getCell(1).getStringCellValue());
+                }
                 dailyReport.setProjectName(row.getCell(2).getStringCellValue());
                 dailyReport.setStaffId(row.getCell(3).getStringCellValue());
-                dailyReport.setName(row.getCell(4).getStringCellValue());
+                dailyReport.setStaffName(row.getCell(4).getStringCellValue());
                 dailyReport.setFunctionId(row.getCell(6).getStringCellValue());
-                dailyReport.setActivity(row.getCell(7).getStringCellValue());
-                dailyReport.setCategory(row.getCell(8).getStringCellValue());
+                dailyReport.setCategory(row.getCell(7).getStringCellValue());
+                dailyReport.setActivity(row.getCell(8).getStringCellValue());
                 dailyReport.setDescription(row.getCell(9).getStringCellValue());
                 dailyReport.setHour((float) row.getCell(14).getNumericCellValue());
 
@@ -61,23 +66,15 @@ public class SimpleFilesIO implements FilesIOService {
              Workbook workbook = new XSSFWorkbook(templateStream);
              ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
 
-            // Access the first sheet in the workbook
-            Sheet sheet = workbook.getSheetAt(1);
+            if (templateStream == null) {
+                throw new IOException("Template file not found: " + templatePath);
+            }
 
-                Row row = sheet.getRow(4);
-                if (row == null) {
-                    row = sheet.createRow(4);
-                }
-                Cell cell1 = row.getCell(5, MissingCellPolicy.CREATE_NULL_AS_BLANK);
-                log.info("value ----->>> "+ cell1.getNumericCellValue());
-                cell1.setCellValue(5.0);
-
-            // Write the modified workbook to a ByteArrayOutputStream
-            workbook.write(outStream);
+            Sheet sheet = workbook.getSheet("OSS");
+            Row row = sheet.getRow(0);
 
             // Convert ByteArrayOutputStream to ByteArrayInputStream and return it
             return new ByteArrayInputStream(outStream.toByteArray());
         }
     }
-
 }
