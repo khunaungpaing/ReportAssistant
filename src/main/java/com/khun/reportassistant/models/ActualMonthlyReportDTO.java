@@ -1,10 +1,8 @@
 package com.khun.reportassistant.models;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 public class ActualMonthlyReportDTO {

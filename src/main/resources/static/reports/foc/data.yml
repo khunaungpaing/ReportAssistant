@@ -1,0 +1,9 @@
+foc_members:
+  - Aung Thein Kyaw
+  - Thant Htet Ko
+  - Thant Tun Kyaw
+  - Shin Khant
+  - Kyaw Zaw Lin
+# the remove members is the list of member to excluding during calculate report
+remove_members:
+  - May Lwin Khaing

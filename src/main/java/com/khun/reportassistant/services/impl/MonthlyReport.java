@@ -51,7 +51,12 @@ public class MonthlyReport implements CalculateReport {
         if (planTotalHours > actualTotalHour) {
             customerSupportHours += processFOCSupportingHours(focReport, planTotalHours - actualTotalHour);
         }
-        var date = holidayService.getHolidays(2024);
+        List<LocalDate> date = null;
+        try {
+            date = holidayService.getHolidays(2024);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         var value = calculateWeekdays(date);
         log.info("dateList : {}",date);
         log.info("weekday in month: {}", value);
@@ -127,7 +132,7 @@ public class MonthlyReport implements CalculateReport {
     }
     
     private void writeFOCReportsToFile(List<DailyReport> reports, String filename) {
-        String directory = "reports/foc/";
+        String directory = "src/main/resources/static/reports/foc/";
         String fullPath = directory + filename;
         
         // Ensure the directory exists
@@ -249,15 +254,3 @@ public class MonthlyReport implements CalculateReport {
     }
 }
 
-/*
-* TODO: take list of foc and list of daily report
-* TODO: filter foc report and contract member report
-* TODO: calculate actualMonthlyReport [customer supporting hours, project management hours and project hour list]
-* TODO: check the sum of actualMonthlyReport is similar with the planMonthlyReport
-*       if not, check which daily report row of foc can we use by category.
-*       and use the closest value and note the one you took.
-* TODO: calculate plan weekly hour
-* TODO: calculate working day and hour excluding myanmar holiday, sat and sun
-* TODO: update data to excel file
-*
-* */

@@ -3,10 +3,7 @@ package com.khun.reportassistant.services.impl;
 import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.FilesIOService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.hssf.util.HSSFColor;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
-import org.apache.poi.ss.util.CellRangeAddress;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -105,19 +103,15 @@ public class SimpleFilesIO implements FilesIOService {
     }
     public ByteArrayInputStream writeExcelFile(List<DailyReport> dailyReports) throws IOException {
        
-        String absolutePath = "reports/mmreport/"+
+        String absolutePath = "/static/reports/mmreport/"+
         (dailyReports.get(0).getProjectName().split("\\s")[0]).toLowerCase()+
                 "-"+dailyReports.get(0).getDate().getYear()+"-"+dailyReports.get(0).getDate().getMonthValue()+".xlsx";
         String templatePath = checkFileExist(absolutePath);
 
         // Read the template Excel file from the resources directory
         try (InputStream templateStream = getClass().getResourceAsStream(templatePath);
-             Workbook workbook = new XSSFWorkbook(templateStream);
+             Workbook workbook = new XSSFWorkbook(Objects.requireNonNull(templateStream));
              ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
-
-            if (templateStream == null) {
-                throw new IOException("Template file not found: " + templatePath);
-            }
 
             Sheet sheet = workbook.getSheet("OSS");
             Row row = sheet.getRow(0);
@@ -129,7 +123,7 @@ public class SimpleFilesIO implements FilesIOService {
     }
 
     private String checkFileExist(String absolutePath) {
-        String templatePath = "/static/report/mm-template.xlsx";
+        String templatePath = "/static/reports/mm-template.xlsx";
         if(absolutePath != null && !absolutePath.isEmpty() && Files.exists(Paths.get(absolutePath))) {
             return absolutePath;
         }

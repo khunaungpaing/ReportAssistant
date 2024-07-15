@@ -3,6 +3,7 @@ package com.khun.reportassistant.controller;
 import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.CalculateReport;
 import com.khun.reportassistant.services.FilesIOService;
+import com.khun.reportassistant.services.MemberService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -26,20 +27,19 @@ import java.util.Map;
 public class FileController {
     private final FilesIOService filesIOService;
     private final CalculateReport calculateReport;
+    private final MemberService focMemberService;
 
     @PostMapping("/upload")
     public ResponseEntity<Map<String,Object>> uploadFile(@RequestParam("file") MultipartFile file) {
         try {
-            List<DailyReport> dataList = filesIOService.readExcelFile(file);
+            var necessaryData = focMemberService.getMemberList();
+            List<DailyReport> dataList = filesIOService.readExcelFile(file).stream()
+                    .filter(r-> !necessaryData.getRemoveMember().contains(r.getStaffName()))
+                    .toList();
 
-            var a = calculateReport.calculateCustomerSupport(dataList, List.of(
-                    "Aung Thein Kyaw",
-                    "Thant Htet Ko",
-                    "Thant Tun Kyaw",
-                    "Shin Khant",
-                    "Kyaw Zaw Lin",
-                    "May Lwin Khaing"
-                ), (5*7.5*8));
+
+
+            var a = calculateReport.calculateCustomerSupport(dataList, necessaryData.getFocMember(), (5*7.5*8));
 
             return ResponseEntity.ok(Map.of("data size", dataList.size()));
             // HttpHeaders headers = new HttpHeaders();

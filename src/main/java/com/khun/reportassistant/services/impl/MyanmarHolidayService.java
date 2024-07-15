@@ -3,10 +3,12 @@ package com.khun.reportassistant.services.impl;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.stereotype.Service;
 
@@ -26,16 +28,17 @@ public class MyanmarHolidayService implements HolidayService{
     }
 
     @Override
-    public List<LocalDate> getHolidays(int year) {
+    public List<LocalDate> getHolidays(int year) throws IOException {
         return getHolidayFromCSV(year);
     }
 
    
-    public List<LocalDate> getHolidayFromCSV(int year) {
-        final String FILE_PATH = "reports/holiday/mm-holiday-"+year+".csv";
+    public List<LocalDate> getHolidayFromCSV(int year) throws IOException{
+        String FILE_PATH = "/static/reports/holiday/mm-holiday-"+year+".csv";
         List<LocalDate> holidays = new ArrayList<>();
 
-        try (BufferedReader br = new BufferedReader(new FileReader(FILE_PATH))) {
+        try (var inputStream = getClass().getResourceAsStream(FILE_PATH);
+             BufferedReader br = new BufferedReader(new InputStreamReader(Objects.requireNonNull(inputStream)))) {
             String line;
             while ((line = br.readLine()) != null) {
                 if (line.startsWith("#")) {
@@ -46,8 +49,6 @@ public class MyanmarHolidayService implements HolidayService{
                     holidays.add(holiday);
                 }
             }
-        } catch (IOException e) {
-            log.error("Error reading the CSV file: " + e.getMessage());
         }
 
         return holidays;
