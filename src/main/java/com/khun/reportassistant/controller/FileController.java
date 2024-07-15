@@ -5,6 +5,7 @@ import com.khun.reportassistant.services.CalculateReport;
 import com.khun.reportassistant.services.FilesIOService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -31,9 +32,14 @@ public class FileController {
         try {
             List<DailyReport> dataList = filesIOService.readExcelFile(file);
 
-            calculateReport.calculateCustomerSupport(dataList, List.of(
-                    "Aung Thein Kyaw", "Thant Htet Ko", "Thant Tun Kyaw", "Shin Khant", "Kyaw Zaw Lin"
-                ));
+            var a = calculateReport.calculateCustomerSupport(dataList, List.of(
+                    "Aung Thein Kyaw",
+                    "Thant Htet Ko",
+                    "Thant Tun Kyaw",
+                    "Shin Khant",
+                    "Kyaw Zaw Lin",
+                    "May Lwin Khaing"
+                ), (5*7.5*8));
 
             return ResponseEntity.ok(Map.of("data size", dataList.size()));
             // HttpHeaders headers = new HttpHeaders();
