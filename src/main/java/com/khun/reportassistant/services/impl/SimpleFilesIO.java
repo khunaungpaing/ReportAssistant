@@ -13,10 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,27 +39,76 @@ public class SimpleFilesIO implements FilesIOService {
                 
                 DailyReport dailyReport = new DailyReport();
 
-                
-                dailyReport.setDate(row.getCell(0).getLocalDateTimeCellValue().toLocalDate());
-                if(row.getCell(1) != null) {
-                    dailyReport.setProjectId(row.getCell(1).getStringCellValue());
+                if(row.getCell(0) != null) {
+                    dailyReport.setDate(row.getCell(0).getLocalDateTimeCellValue().toLocalDate());
                 }
-                dailyReport.setProjectName(row.getCell(2).getStringCellValue());
-                dailyReport.setStaffId(row.getCell(3).getStringCellValue());
-                dailyReport.setStaffName(row.getCell(4).getStringCellValue());
-                dailyReport.setFunctionId(row.getCell(6).getStringCellValue());
-                dailyReport.setCategory(row.getCell(7).getStringCellValue());
-                dailyReport.setActivity(row.getCell(8).getStringCellValue());
-                dailyReport.setDescription(row.getCell(9).getStringCellValue());
-                dailyReport.setHour((float) row.getCell(14).getNumericCellValue());
+                
 
+                if (row.getCell(1) != null) {
+                    dailyReport.setProjectId(row.getCell(1).getStringCellValue());
+                } else {
+                    dailyReport.setProjectId("");
+                }
+                
+                if (row.getCell(2) != null) {
+                    dailyReport.setProjectName(row.getCell(2).getStringCellValue());
+                } else {
+                    dailyReport.setProjectName("");
+                }
+                
+                if (row.getCell(3) != null) {
+                    dailyReport.setStaffId(row.getCell(3).getStringCellValue());
+                } else {
+                    dailyReport.setStaffId("");
+                }
+                
+                if (row.getCell(4) != null) {
+                    dailyReport.setStaffName(row.getCell(4).getStringCellValue());
+                } else {
+                    dailyReport.setStaffName("");
+                }
+                
+                if (row.getCell(6) != null) {
+                    dailyReport.setFunctionId(row.getCell(6).getStringCellValue());
+                } else {
+                    dailyReport.setFunctionId("");
+                }
+                
+                if (row.getCell(7) != null) {
+                    dailyReport.setCategory(row.getCell(7).getStringCellValue());
+                } else {
+                    dailyReport.setCategory("");
+                }
+                
+                if (row.getCell(8) != null) {
+                    dailyReport.setActivity(row.getCell(8).getStringCellValue());
+                } else {
+                    dailyReport.setActivity("");
+                }
+                
+                if (row.getCell(9) != null) {
+                    dailyReport.setDescription(row.getCell(9).getStringCellValue());
+                } else {
+                    dailyReport.setDescription("");
+                }
+                
+                if (row.getCell(14) != null) {
+                    dailyReport.setHour((float) row.getCell(14).getNumericCellValue());
+                } else {
+                    dailyReport.setHour(0.0f);
+                }
+                
                 dailyReports.add(dailyReport);
             }
         }
         return dailyReports;
     }
     public ByteArrayInputStream writeExcelFile(List<DailyReport> dailyReports) throws IOException {
-        String templatePath = "/static/report/mm-template.xlsx";
+       
+        String absolutePath = "reports/mmreport/"+
+        (dailyReports.get(0).getProjectName().split("\\s")[0]).toLowerCase()+
+                "-"+dailyReports.get(0).getDate().getYear()+"-"+dailyReports.get(0).getDate().getMonthValue()+".xlsx";
+        String templatePath = checkFileExist(absolutePath);
 
         // Read the template Excel file from the resources directory
         try (InputStream templateStream = getClass().getResourceAsStream(templatePath);
@@ -73,8 +122,17 @@ public class SimpleFilesIO implements FilesIOService {
             Sheet sheet = workbook.getSheet("OSS");
             Row row = sheet.getRow(0);
 
+
             // Convert ByteArrayOutputStream to ByteArrayInputStream and return it
             return new ByteArrayInputStream(outStream.toByteArray());
         }
+    }
+
+    private String checkFileExist(String absolutePath) {
+        String templatePath = "/static/report/mm-template.xlsx";
+        if(absolutePath != null && !absolutePath.isEmpty() && Files.exists(Paths.get(absolutePath))) {
+            return absolutePath;
+        }
+        return templatePath;
     }
 }
