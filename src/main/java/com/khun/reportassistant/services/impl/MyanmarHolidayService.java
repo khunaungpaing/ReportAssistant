@@ -18,14 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
-public class MyanmarHolidayService implements HolidayService{
+public class MyanmarHolidayService extends HolidayService{
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-    @Override
-    public boolean isHoliday(String date) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'isHoliday'");
-    }
 
     @Override
     public List<LocalDate> getHolidays(int year) throws IOException {
@@ -33,7 +27,7 @@ public class MyanmarHolidayService implements HolidayService{
     }
 
    
-    public List<LocalDate> getHolidayFromCSV(int year) throws IOException{
+    private List<LocalDate> getHolidayFromCSV(int year) throws IOException{
         String FILE_PATH = "/static/reports/holiday/mm-holiday-"+year+".csv";
         List<LocalDate> holidays = new ArrayList<>();
 

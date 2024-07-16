@@ -1,5 +1,6 @@
 package com.khun.reportassistant.controller;
 
+import com.khun.reportassistant.exception.CannotReadFileException;
 import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.CalculateReport;
 import com.khun.reportassistant.services.FilesIOService;
@@ -37,20 +38,19 @@ public class FileController {
                     .filter(r-> !necessaryData.getRemoveMember().contains(r.getStaffName()))
                     .toList();
 
+            var actualMonthlyReportDTO = calculateReport.calculateCustomerSupport(dataList, necessaryData.getFocMember(), (5*7.5*8));
 
+            var filename = (dataList.get(0).getProjectName().split("\\s")[0]).toLowerCase()+
+                    "-"+dataList.get(0).getDate().getYear()+"-"+dataList.get(0).getDate().getMonthValue()+".xlsx";
 
-            var a = calculateReport.calculateCustomerSupport(dataList, necessaryData.getFocMember(), (5*7.5*8));
-
+            var out = filesIOService.writeExcelFile(actualMonthlyReportDTO,filename);
             return ResponseEntity.ok(Map.of("data size", dataList.size()));
-            // HttpHeaders headers = new HttpHeaders();
-            // headers.add("Content-Disposition", "attachment; filename=report.xlsx");
-            // return ResponseEntity
-            //         .ok()
-            //         .headers(headers)
-            //         .contentType(MediaType.APPLICATION_OCTET_STREAM)
-            //         .body(new InputStreamResource(in));
-        } catch (Exception e) {
-            log.error("Failed to read file: {}", e.getMessage(), e);
+
+        } catch (CannotReadFileException e) {
+            log.error("Wrong file structure. Failed to read file: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        } catch (IOException e) {
+            log.error("Failed to read file: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

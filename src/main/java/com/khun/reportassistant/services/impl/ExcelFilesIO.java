@@ -1,5 +1,7 @@
 package com.khun.reportassistant.services.impl;
 
+import com.khun.reportassistant.exception.CannotReadFileException;
+import com.khun.reportassistant.models.ActualMonthlyReportDTO;
 import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.FilesIOService;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +22,7 @@ import java.util.Objects;
 
 @Service
 @Slf4j
-public class SimpleFilesIO implements FilesIOService {
+public class ExcelFilesIO implements FilesIOService {
 
     @Override
     public List<DailyReport> readExcelFile(MultipartFile file) throws IOException {
@@ -98,14 +100,19 @@ public class SimpleFilesIO implements FilesIOService {
                 
                 dailyReports.add(dailyReport);
             }
+            if (dailyReports.isEmpty()) {
+                throw new CannotReadFileException("There are no daily reports in the file");
+            }
+        }catch (NullPointerException|IllegalStateException e) {
+            throw new CannotReadFileException(e.getMessage());
+        }catch (IOException e) {
+            throw new IOException(e.getMessage());
         }
         return dailyReports;
     }
-    public ByteArrayInputStream writeExcelFile(List<DailyReport> dailyReports) throws IOException {
+    public ByteArrayInputStream writeExcelFile(ActualMonthlyReportDTO actualMonthlyReportDTO, String filename) throws IOException {
        
-        String absolutePath = "/static/reports/mmreport/"+
-        (dailyReports.get(0).getProjectName().split("\\s")[0]).toLowerCase()+
-                "-"+dailyReports.get(0).getDate().getYear()+"-"+dailyReports.get(0).getDate().getMonthValue()+".xlsx";
+        String absolutePath = "/static/reports/mmreport/"+filename;
         String templatePath = checkFileExist(absolutePath);
 
         // Read the template Excel file from the resources directory

@@ -39,7 +39,7 @@ public class MonthlyReport implements CalculateReport {
     public ActualMonthlyReportDTO calculateCustomerSupport(List<DailyReport> dailyReports, List<String> focMembers, double planTotalHours) {
         List<DailyReport> focReport = filterReportsByStaffNames(dailyReports, focMembers);
         List<DailyReport> contractReport = filterReportsExcludingStaffNames(dailyReports, focMembers);
-    
+        List<LocalDate> dates = dailyReports.stream().map(DailyReport::getDate).distinct().toList();
         List<String> projectNames = extractDistinctProjectNames(contractReport, "(?i)^jaz.*");
         List<ProjectHour> projectHoursList = calculateProjectHours(contractReport, projectNames);
     
@@ -51,17 +51,26 @@ public class MonthlyReport implements CalculateReport {
         if (planTotalHours > actualTotalHour) {
             customerSupportHours += processFOCSupportingHours(focReport, planTotalHours - actualTotalHour);
         }
-        List<LocalDate> date = null;
+        List<LocalDate> holidayDate = null;
         try {
-            date = holidayService.getHolidays(2024);
+            holidayDate = holidayService.getHolidays(2024);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        var value = calculateWeekdays(date);
-        log.info("dateList : {}",date);
-        log.info("weekday in month: {}", value);
 
-        return createActualMonthlyReportDTO(customerSupportHours, projectManagementHours, projectHoursList);
+        var week= dates.get(0).getDayOfMonth()+"~"+dates.get(dates.size()-1).getDayOfMonth();
+        var workingDays = holidayService.calculateWeekdays(holidayDate)
+                .get(dates.get(0).getMonth().name().toLowerCase())
+                .get(week);
+        log.info("workingDaysPerYear : {}",workingDays);
+
+        return ActualMonthlyReportDTO.builder()
+                .customerSupportingHour(customerSupportHours)
+                .projectManagementHour(projectManagementHours)
+                .projectHourList(projectHoursList)
+                .week(week)
+                .workingDay(workingDays)
+                .build();
     }
     
     private List<DailyReport> filterReportsByStaffNames(List<DailyReport> reports, List<String> staffNames) {
@@ -198,59 +207,6 @@ public class MonthlyReport implements CalculateReport {
     // calculate weekday in every month excluding public holiday
     // input -> holiday list of the year
     // output -> list of weekday in every month like [july1: {"1-5":5},july2: {"8-12":5},...] output: Map<String, Map<String, Integer>>
-    public static Map<String, Map<String, Integer>> calculateWeekdays(List<LocalDate> holidays) {
-        Map<String, Map<String, Integer>> result = new LinkedHashMap<>();
-        String[] months = {
-            "january", "february", "march", "april", "may", "june", 
-            "july", "august", "september", "october", "november", "december"
-        };
 
-        for (int month = 1; month <= 12; month++) {
-            YearMonth yearMonth = YearMonth.of(LocalDate.now().getYear(), month);
-            LocalDate firstDayOfMonth = yearMonth.atDay(1);
-            LocalDate lastDayOfMonth = yearMonth.atEndOfMonth();
-
-            Map<String, Integer> weeklyCounts = new LinkedHashMap<>();
-            String monthName = months[month - 1];
-
-            LocalDate currentDay = firstDayOfMonth;
-            while (!currentDay.isAfter(lastDayOfMonth)) {
-                if (isWeekday(currentDay) && !holidays.contains(currentDay)) {
-                    String weekSegment = getWeekSegment(currentDay, firstDayOfMonth, lastDayOfMonth, holidays);
-                    weeklyCounts.put(weekSegment, weeklyCounts.getOrDefault(weekSegment, 0) + 1);
-                }
-                currentDay = currentDay.plusDays(1);
-            }
-
-            result.put(monthName, weeklyCounts);
-        }
-
-        return result;
-    }
-
-    private static boolean isWeekday(LocalDate date) {
-        DayOfWeek dayOfWeek = date.getDayOfWeek();
-        return dayOfWeek != DayOfWeek.SATURDAY && dayOfWeek != DayOfWeek.SUNDAY;
-    }
-
-    private static String getWeekSegment(LocalDate date, LocalDate startOfMonth, LocalDate endOfMonth, List<LocalDate> holidays) {
-        LocalDate firstDayOfWeek = date.with(DayOfWeek.MONDAY);
-        LocalDate lastDayOfWeek = firstDayOfWeek.plusDays(4);
-
-        // Adjust for month boundaries
-        if (firstDayOfWeek.isBefore(startOfMonth)) {
-            firstDayOfWeek = startOfMonth;
-        }
-        if (lastDayOfWeek.isAfter(endOfMonth)) {
-            lastDayOfWeek = endOfMonth;
-        }
-
-        // Adjust for holidays
-        while (holidays.contains(lastDayOfWeek) && lastDayOfWeek.isAfter(firstDayOfWeek)) {
-            lastDayOfWeek = lastDayOfWeek.minusDays(1);
-        }
-
-        return firstDayOfWeek.getDayOfMonth() + "-" + lastDayOfWeek.getDayOfMonth();
-    }
 }
 
