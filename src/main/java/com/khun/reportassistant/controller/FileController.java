@@ -5,9 +5,11 @@ import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.CalculateReport;
 import com.khun.reportassistant.services.FilesIOService;
 import com.khun.reportassistant.services.MemberService;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
+
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @Slf4j
@@ -31,30 +32,41 @@ public class FileController {
     private final MemberService focMemberService;
 
     @PostMapping("/upload")
-    public ResponseEntity<Map<String,Object>> uploadFile(@RequestParam("file") MultipartFile file) {
-        try {
-            var necessaryData = focMemberService.getMemberList();
-            List<DailyReport> dataList = filesIOService.readExcelFile(file).stream()
-                    .filter(r-> !necessaryData.getRemoveMember().contains(r.getStaffName()))
-                    .toList();
+    public ResponseEntity<InputStreamResource> uploadFile(@RequestParam("file") MultipartFile file, HttpServletResponse response) {
+    try {
+        // Retrieve necessary data
+        var necessaryData = focMemberService.getMemberList();
 
-            var actualMonthlyReportDTO = calculateReport.calculateCustomerSupport(dataList, necessaryData.getFocMember(), (5*7.5*8));
+        // Process the uploaded file
+        List<DailyReport> dataList = filesIOService.readExcelFile(file).stream()
+                .filter(r -> !necessaryData.getRemoveMember().contains(r.getStaffName()))
+                .toList();
 
-            var filename = (dataList.get(0).getProjectName().split("\\s")[0]).toLowerCase()+
-                    "-"+dataList.get(0).getDate().getYear()+"-"+dataList.get(0).getDate().getMonthValue()+".xlsx";
+        // Calculate the report
+        var actualMonthlyReportDTO = calculateReport.calculateCustomerSupport(dataList, necessaryData.getFocMember(), (5 * 7.5 * 8));
 
-            var out = filesIOService.writeExcelFile(actualMonthlyReportDTO,filename);
-            return ResponseEntity.ok(Map.of("data size", dataList.size()));
+        // Generate the filename
+        var filename = (dataList.get(0).getProjectName().split("\\s")[0]).toLowerCase() +
+                "-" + dataList.get(0).getDate().getYear() + "-" + dataList.get(0).getDate().getMonthValue() + ".xlsx";
 
-        } catch (CannotReadFileException e) {
-            log.error("Wrong file structure. Failed to read file: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        } catch (IOException e) {
-            log.error("Failed to read file: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
+        // Write the report to a file
+        ByteArrayInputStream in = filesIOService.writeExcelFile(actualMonthlyReportDTO, filename);
+          HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=report.xlsx");
+            return ResponseEntity
+                    .ok()
+                    .headers(headers)
+                    .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                    .body(new InputStreamResource(in));        
+
+    } catch (CannotReadFileException e) {
+        log.error("Wrong file structure. Failed to read file: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+    } catch (IOException e) {
+        log.error("Failed to read file: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
     }
-
+}
 
 
 }

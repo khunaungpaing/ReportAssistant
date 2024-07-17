@@ -59,9 +59,10 @@ public class MonthlyReport implements CalculateReport {
         }
 
         var week= dates.get(0).getDayOfMonth()+"~"+dates.get(dates.size()-1).getDayOfMonth();
-        var workingDays = holidayService.calculateWeekdays(holidayDate)
-                .get(dates.get(0).getMonth().name().toLowerCase())
-                .get(week);
+        var workingDaysPerMonth = holidayService.calculateWeekdays(holidayDate)
+                .get(dates.get(0).getMonth().name().toLowerCase());
+        var weekIndex = workingDaysPerMonth.keySet().stream().toList().indexOf(week);
+        var workingDays = workingDaysPerMonth.get(week);
         log.info("workingDaysPerYear : {}",workingDays);
 
         return ActualMonthlyReportDTO.builder()
@@ -69,7 +70,10 @@ public class MonthlyReport implements CalculateReport {
                 .projectManagementHour(projectManagementHours)
                 .projectHourList(projectHoursList)
                 .week(week)
+                .weekIndex(weekIndex)
                 .workingDay(workingDays)
+                .month(dates.get(0).getMonth().name())
+                .workingDaysPerMonth(workingDaysPerMonth)
                 .build();
     }
     

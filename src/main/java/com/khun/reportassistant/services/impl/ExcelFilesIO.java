@@ -4,17 +4,22 @@ import com.khun.reportassistant.exception.CannotReadFileException;
 import com.khun.reportassistant.models.ActualMonthlyReportDTO;
 import com.khun.reportassistant.models.DailyReport;
 import com.khun.reportassistant.services.FilesIOService;
+
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -110,30 +115,84 @@ public class ExcelFilesIO implements FilesIOService {
         }
         return dailyReports;
     }
-    public ByteArrayInputStream writeExcelFile(ActualMonthlyReportDTO actualMonthlyReportDTO, String filename) throws IOException {
-       
-        String absolutePath = "/static/reports/mmreport/"+filename;
+
+   public ByteArrayInputStream writeExcelFile(ActualMonthlyReportDTO actualMonthlyReportDTO, String filename) throws IOException {
+        String folderPath = "src/main/resources/static/reports/mmreport/";
+        String absolutePath = folderPath + filename;
         String templatePath = checkFileExist(absolutePath);
 
         // Read the template Excel file from the resources directory
-        try (InputStream templateStream = getClass().getResourceAsStream(templatePath);
-             Workbook workbook = new XSSFWorkbook(Objects.requireNonNull(templateStream));
+        try (InputStream templateStream = new ClassPathResource(templatePath).getInputStream();
+             XSSFWorkbook workbook = new XSSFWorkbook(Objects.requireNonNull(templateStream));
              ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
 
             Sheet sheet = workbook.getSheet("OSS");
-            Row row = sheet.getRow(0);
+            Row row = sheet.getRow(1);
 
+            // Write the actual monthly report data to the Excel file
+            row.getCell(1).setCellValue(actualMonthlyReportDTO.getMonth());
 
-            // Convert ByteArrayOutputStream to ByteArrayInputStream and return it
+            row = sheet.getRow(4);
+            int startCol = 5;
+            for (var value : actualMonthlyReportDTO.getWorkingDaysPerMonth().values()) {
+                row.getCell(startCol++).setCellValue(value);
+            }
+            
+
+            row = sheet.getRow(5);
+            startCol = 5;
+            for (var value : actualMonthlyReportDTO.getWorkingDaysPerMonth().keySet()) {
+                row.getCell(startCol++).setCellValue(value);
+            }
+
+            //for customer supporting hour
+            row = sheet.getRow(10);
+            row.getCell(actualMonthlyReportDTO.getWeekIndex() + 4).setCellValue(actualMonthlyReportDTO.getCustomerSupportingHour());
+
+            // Evaluate the formula
+            FormulaEvaluator evaluator = workbook.getCreationHelper().createFormulaEvaluator();
+            evaluator.evaluateAll();
+
+            // Write the modified workbook to a ByteArrayOutputStream
+            workbook.write(outStream);
+            outStream.flush();
+
+            // Ensure the folder path exists, if not, create it
+            Path path = Paths.get(folderPath);
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+
+            // Save the output stream to a file for verification
+            try (FileOutputStream fos = new FileOutputStream(absolutePath)) {
+                fos.write(outStream.toByteArray());
+                fos.flush();
+            }
+
             return new ByteArrayInputStream(outStream.toByteArray());
+        } catch (IOException e) {
+            throw new IOException("Error while processing the Excel file", e);
+        } catch (NullPointerException | IllegalStateException e) {
+            throw new IOException("Error while writing data to the Excel file", e);
         }
     }
 
     private String checkFileExist(String absolutePath) {
-        String templatePath = "/static/reports/mm-template.xlsx";
-        if(absolutePath != null && !absolutePath.isEmpty() && Files.exists(Paths.get(absolutePath))) {
-            return absolutePath;
+        String templatePath = "static/reports/mm-template.xlsx";
+
+        if (absolutePath != null && !absolutePath.isEmpty()) {
+            try {
+                Path path = Paths.get(absolutePath).normalize();
+                if (Files.exists(path)) {
+                    return absolutePath;
+                } else {
+                    return templatePath;
+                }
+            } catch (Exception e) {
+                System.err.println("An error occurred while checking the file existence: " + e.getMessage());
+            }
         }
+
         return templatePath;
     }
 }

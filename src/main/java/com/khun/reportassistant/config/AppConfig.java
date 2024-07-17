@@ -1,5 +1,6 @@
 package com.khun.reportassistant.config;
 
+import org.apache.xmlbeans.ResourceLoader;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.yaml.snakeyaml.DumperOptions;
@@ -16,4 +17,5 @@ public class AppConfig {
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
         return new Yaml(options);
     }
+
 }

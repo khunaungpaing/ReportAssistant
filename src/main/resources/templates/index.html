@@ -135,24 +135,22 @@
                 method: 'POST',
                 body: formData
             });
-
             if (response.ok) {
-                console.log('File uploaded successfully');
-                alert(response);
-                // const blob = await response.blob();
-                // const url = window.URL.createObjectURL(blob);
-                // const a = document.createElement('a');
-                // a.style.display = 'none';
-                // a.href = url;
-                // a.download = 'report.xlsx';
-                // document.body.appendChild(a);
-                // a.click();
-                // window.URL.revokeObjectURL(url);
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'report.xlsx';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
             } else {
-                console.error('File upload failed:', response.statusText);
+                console.error('File upload failed');
             }
         } catch (error) {
-            console.error('Error:', error);
+            console.error('Error');
         }
     }
 
